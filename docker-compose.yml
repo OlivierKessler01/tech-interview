@@ -8,6 +8,7 @@ services:
       - .:/code
     build:
       context: .
+      dockerfile: ./Dockerfile
       args:
         - MONGO_USERNAME=${MONGO_USERNAME}
         - MONGO_PASSWORD=${MONGO_PASSWORD}
@@ -15,7 +16,9 @@ services:
         - MONGO_DATABASE=${MONGO_DATABASE}
   
   reverse_proxy:
-    image: nginx:latest
+    build:
+      context: .
+      dockerfile: ./Dockerfile.nginx
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf
     ports:
