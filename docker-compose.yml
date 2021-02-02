@@ -21,8 +21,6 @@ services:
     ports:
       - 80:80
       - 443:443
-    environment:
-      - APPLICATION_URL=http://web:8080/
 
   mongo:
     image: mongo:3.4.4
@@ -30,7 +28,9 @@ services:
     ports:
       - '27017:27017'
     volumes:
-      - './Data/mongo:/data/db'
+      - ./Data/mongo:/data/db
+      - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+      MONGO_INITDB_DATABASE : ${MONGO_DATABASE}
