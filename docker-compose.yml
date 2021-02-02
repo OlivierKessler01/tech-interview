@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+  web:
+    expose:
+      - 8080
+    volumes:
+      - .:/code
+    build:
+      context: .
+      args:
+        - MONGO_USERNAME=${MONGO_USERNAME}
+        - MONGO_PASSWORD=${MONGO_PASSWORD}
+        - MONGO_HOST=mongo
+        - MONGO_DATABASE=${MONGO_DATABASE}
+  
+  reverse_proxy:
+    image: nginx:latest
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - 80:80
+      - 443:443
+    environment:
+      - APPLICATION_URL=http://web:8080/
+
+  mongo:
+    image: mongo:3.4.4
+    restart: always
+    ports:
+      - '27017:27017'
+    volumes:
+      - './Data/mongo:/data/db'
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
