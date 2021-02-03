@@ -1,6 +1,6 @@
 from aiohttp import web
-from auth.creation import handle_creation
-from auth.verification import handle_verification
+from registration.creation import handle_creation
+from registration.verification import handle_verification
 
 app = web.Application()
 app.add_routes([web.post('/register', handle_creation),
