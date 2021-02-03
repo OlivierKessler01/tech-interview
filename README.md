@@ -13,3 +13,6 @@ curl --insecure -d "verification_code=1234" -X POST https://localhost/verify
 ```
 ## Run tests
 
+## Architecture
+![plot](./assets/Architecture.png)
+
