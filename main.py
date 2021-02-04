@@ -8,7 +8,7 @@ import os
 db_client = MongoClient('mongodb://' + os.environ['MONGO_USERNAME']+ ':' + 
     os.environ['MONGO_PASSWORD'] + '@' + os.environ['MONGO_HOST'] + ':' 
     + os.environ['MONGO_PORT'] + '/')
-database = db_client['MONGO_DATABASE']
+database = db_client[os.environ['MONGO_DATABASE']]
 collection = database.users
 
 creation_handler = CreationHandler(db_collection=collection, smtp_host=os.environ['SMTP_HOST'] ,smtp_port=os.environ['SMTP_PORT'])
