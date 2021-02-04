@@ -1,11 +1,20 @@
 from aiohttp import web
 from pymongo import MongoClient
-import os 
 import time
+import smtplib
 
 class CreationHandler:
-    def __init__(self, client : MongoClient):
-        self.client = client
+    def __init__(self, db_client : MongoClient, database_name: str, smtp_host : str, smtp_port: int):
+        self.db_client = db_client
+        self.database_name = database_name
+        self.smtp_host = smtp_host
+        self.smtp_port = smtp_port
+
+    def send_mail(self, email : str, message : str):
+        with smtplib.SMTP(self.smtp_host, self.smtp_port) as client:
+            client.ehlo()
+            client.sendmail('test@test.test', email, message)
+            print("Sending mail to : " + email + ". Content : " + message + "\n")
 
     async def handle_creation(self, request):
         '''
@@ -18,9 +27,11 @@ class CreationHandler:
             password = data['password']
             email = data['email']
 
-            db = self.client[os.environ['MONGO_DATABASE']]
+            db = self.db_client[self.database_name]
             verification_code = '1233456789979'
             code_timestamp = time.time();
+
+            self.send_mail(email, "Your code is : " + verification_code)
 
             user_id = db.users.insert_one(
                 {
@@ -31,7 +42,6 @@ class CreationHandler:
                     'code_timestamp' :  code_timestamp
                 }
             ).inserted_id
-            print(user_id)
 
             response_obj = { 'status' : 'success', 'code' : verification_code}
             return web.json_response(response_obj, status=200)
