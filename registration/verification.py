@@ -1,12 +1,79 @@
 from aiohttp import web
 from pymongo.collection import Collection
+from passlib.context import CryptContext
+import time
 
 class VerificationHandler:
-    def __init__(self, db_collection : Collection):
+    def __init__(self, db_collection : Collection, crypt_context : CryptContext):
         self.db_collection = db_collection
+        self.crypt_context = crypt_context
 
     async def handle_verification(self, request):
-        name = request.match_info.get('name', "Anonymous")
-        text = "Hello, " + name + ". This is the verification API\n"
-        return web.Response(text=text)
+        '''
+            This co-routine handles the validation process of the user registration
+
+            It takes a code that's been previously given to the user and sets the account as verified if the code is right and not stale
+            The delay beforing staling is of 1 minute.
+        '''
+        data = await request.post()
+
+        try:
+            username = data['username']
+            password = data['password']
+        except KeyError as e:
+            #HTTP Basic Auth not set, send 401 Unauthorized code
+            response_obj = { 'status' : 'failed', 'message': "Unauthorized"}
+            return web.json_response(response_obj, status=401)
+
+        try:
+            email = data['email']
+            verification_code = data['code']
+
+            #Look into the DB to see if the username of email address are already in use
+            existing_user = self.db_collection.find_one(
+                {   
+                    "$and": [ { "email": email }, { "username": username }]
+                }
+            )
+
+            if existing_user is not None:
+                #The user is already verified
+                if existing_user['verified'] == True:
+                    message = "Username or email already exists/is already linked to a verified account"
+                    response_obj = { 'status' : 'failed', 'message': message}
+                    return web.json_response(response_obj, status=409)
+                #If the code has expired (timestamp in second from epoch - 60 secondes)
+                elif existing_user['code_timestamp'] < time.time() - 60:
+                    message = "The verification code is stale. Please retry calling /register to get a new code."
+                    response_obj = { 'status' : 'failed', 'message': message}
+                    return web.json_response(response_obj, status=403)
+                #The code provided is wrong
+                elif existing_user['verification_code'] != verification_code:
+                    message = "Bad verification code."
+                    response_obj = { 'status' : 'failed', 'message': message}
+                    return web.json_response(response_obj, status=403)
+                else:
+                    #The password provided in the HTTP call is right
+                    if self.crypt_context.verify(password, existing_user['verification_code']):
+                        try:
+                            self.db_collection.update_one({'_id': existing_user['_id']},
+                                {'$set': {'verified' : True}
+                                }, upsert=False)
+
+                            message = "The account is now verified."
+                        except Exception as e:
+                            response_obj = { 'status' : 'failed', 'message': e}
+                            return web.json_response(e, status=500)
+                    #The password is wrong
+                    else:
+                        #HTTP Basic Auth not set, send 401 Unauthorized code
+                        response_obj = { 'status' : 'failed', 'message': "Unauthorized, bad credentials"}
+                        return web.json_response(response_obj, status=401)
+                
+            response_obj = { 'status' : 'success', "message": message}
+            return web.json_response(response_obj, status=200)
+        except KeyError as e:
+            #If a field is missing in the HTTP POST content
+            response_obj = { 'status' : 'failed', 'message': "Bad request" }
+            return web.json_response(response_obj, status=400)
 

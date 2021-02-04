@@ -1,13 +1,15 @@
 from aiohttp import web
 from pymongo.collection import Collection
+from passlib.context import CryptContext
 import time
 import smtplib
 
 class CreationHandler:
-    def __init__(self, db_collection : Collection, smtp_host : str, smtp_port: int):
+    def __init__(self, db_collection : Collection, smtp_host : str, smtp_port: int, crypt_context : CryptContext):
         self.db_collection = db_collection
         self.smtp_host = smtp_host
         self.smtp_port = smtp_port
+        self.crypt_context = crypt_context
 
     def send_mail(self, email : str, message : str):
         '''
@@ -73,8 +75,8 @@ class CreationHandler:
                 try:
                     user_id = self.db_collection.insert_one(
                     {
-                        'username': username, 
-                        'password' : password, 
+                        'username': username,
+                        'password' : self.crypt_context.hash(password), 
                         'email' : email, 
                         'verification_code' : verification_code,
                         'code_timestamp' :  code_timestamp,

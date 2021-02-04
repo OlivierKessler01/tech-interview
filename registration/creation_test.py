@@ -4,6 +4,7 @@ import unittest
 import json
 from pymongo import MongoClient
 import smtplib
+from passlib.context import CryptContext
 import os
 from unittest.mock import MagicMock
 
@@ -25,7 +26,13 @@ class CreationTest(AioHTTPTestCase):
         self.collection.find_one = MagicMock(return_value=None)
         self.collection.insert_one = MagicMock(return_value={"inserted_id": "blabla"})
         self.collection.update_one = MagicMock(return_value={"inserted_id": "blabla"})
-        creation_handler = CreationHandler(db_collection=self.collection, smtp_host=os.environ['SMTP_HOST'] ,smtp_port=os.environ['SMTP_PORT'])
+        crypt_context = CryptContext(
+                        schemes=["pbkdf2_sha256"],
+                        default="pbkdf2_sha256",
+                        pbkdf2_sha256__default_rounds=30000
+                    )
+
+        creation_handler = CreationHandler(db_collection=self.collection, crypt_context=crypt_context ,smtp_host=os.environ['SMTP_HOST'], smtp_port=os.environ['SMTP_PORT'])
 
         app = web.Application()
         app.add_routes([web.post('/register', creation_handler.handle_creation)])
