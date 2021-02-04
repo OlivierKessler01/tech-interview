@@ -2,13 +2,24 @@ from aiohttp.test_utils import AioHTTPTestCase, unittest_run_loop
 from aiohttp import web
 import unittest
 import json
+from pymongo import MongoClient
+import os
 
-from creation import handle_creation
+from creation import CreationHandler
 
 class CreationTest(AioHTTPTestCase):
     async def get_application(self):
+        '''
+            Mocking mongoclient and injecting it in the handler so the test doesn't write in database
+        '''
+        client = MongoClient('mongodb://' + os.environ['MONGO_USERNAME']+ ':' + 
+            os.environ['MONGO_PASSWORD'] + '@' + os.environ['MONGO_HOST'] + ':' 
+            + os.environ['MONGO_PORT'] + '/')
+
+        creation_handler = CreationHandler(client)
+
         app = web.Application()
-        app.add_routes([web.post('/register', handle_creation)])
+        app.add_routes([web.post('/register', creation_handler.handle_creation)])
         return app
 
     @unittest_run_loop
@@ -19,6 +30,11 @@ class CreationTest(AioHTTPTestCase):
         json_response = await resp.json()
         assert "code" in json_response
         assert len(json_response["code"]) > 10
+
+    @unittest_run_loop
+    async def test_handle_creation_wrong_method(self):
+        resp = await self.client.request("GET", "/register")
+        assert resp.status == 405
 
     @unittest_run_loop
     async def test_handle_creation_missing_parameter(self):
@@ -45,8 +61,6 @@ class CreationTest(AioHTTPTestCase):
         assert "code" not in json_response
         assert "reason" in json_response
         assert json_response["reason"] == "Bad request"
-
-
 
 if __name__ == "__main__":
     unittest.main()

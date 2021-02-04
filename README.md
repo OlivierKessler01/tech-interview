@@ -29,6 +29,14 @@ docker exec -it <container_web_name> /bin/bash
 python3 -m unittest discover ./
 ```
 
+## Connecting to the database
+```sh
+docker exec -it <container_mongo_name> /bin/bash
+mongo --username root --password root --authenticationDatabase admin
+use dailymotion
+db.users.find()
+```
+
 ## Architecture
 ![plot](./assets/Architecture.png)
 
