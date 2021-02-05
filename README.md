@@ -31,8 +31,10 @@ curl --insecure -d "verification_code=1234" -u "foo@bar.com:testpassword" -X POS
 ```
 ## Run tests
 ```sh
-docker exec -it <container_web_name> /bin/bash      
-python3 -m unittest discover ./
+docker exec -it <container_web_name> /bin/bash  
+#TODO : find a unittest discovery solution to automate it   
+python3 registration/verification_test.py
+python3 registration/creation_test.py 
 ```
 
 ## Connecting to the database

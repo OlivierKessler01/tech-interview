@@ -6,7 +6,7 @@ import time
 class VerificationHandler:
     '''
         Collection of function pointers (coroutines whose names are starting by handle_*) to pass as
-         route callback function to AIOHTTP server
+         route callback function to AIOHTTP server.
     '''
 
     def __init__(self, db_collection : Collection, crypt_context : CryptContext):
@@ -55,7 +55,7 @@ class VerificationHandler:
                     return web.json_response(response_obj, status=403)
                 else:
                     #The password provided in the HTTP call is right
-                    if self.crypt_context.verify(password, existing_user['verification_code']):
+                    if self.crypt_context.verify(password, existing_user['password']):
                         try:
                             self.db_collection.update_one({'_id': existing_user['_id']},
                                 {'$set': {'verified' : True}

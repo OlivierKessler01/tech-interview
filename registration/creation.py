@@ -3,11 +3,14 @@ from pymongo.collection import Collection
 from passlib.context import CryptContext
 import time
 import smtplib
+import hashlib
+import random
+import string
 
 class CreationHandler:
     '''
         Collection of function pointers (coroutines whose names are starting by handle_*) to pass as
-         route callback function to AIOHTTP serve.
+         route callback function to AIOHTTP server.
     '''
 
     def __init__(self, db_collection : Collection, smtp_host : str, smtp_port: int, crypt_context : CryptContext):
@@ -24,7 +27,6 @@ class CreationHandler:
         with smtplib.SMTP(self.smtp_host, self.smtp_port) as client:
             client.ehlo()
             client.sendmail('test@test.test', email, message)
-            print("Sending mail to : " + email + ". Content : " + message + "\n")
 
     async def handle_creation(self, request) -> web.Response:
         '''
@@ -41,7 +43,18 @@ class CreationHandler:
         try:
             password = data['password']
             email = data['email']
-            verification_code = str(abs(hash(email)) % (10 ** 4))
+            verification_code = str(
+                int(hashlib.sha256((email + random.choice(string.ascii_letters)).encode('utf-8')).hexdigest(), 16) % 10**4
+            )
+
+            #using hash or hashlib sometimes returns 3-digit verification code, probably due to a leading 0 in the hash
+            if len(verification_code) == 3:
+                verification_code = verification_code + str(random.randint(0, 10))
+
+            if len(verification_code) != 4:
+                response_obj = { 'status' : 'failed', 'message': 'Server error'}
+                return web.json_response(e, status=500)
+           
             code_timestamp = time.time()
             message = "The registration process has been recorded, here is your code (also sent via email)"
 

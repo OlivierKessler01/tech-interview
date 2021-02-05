@@ -17,10 +17,10 @@ class CreationTest(AioHTTPTestCase):
             Mocking mongoclient and injecting it in the handler so the test doesn't write in database
         '''
 
-        db_client = MongoClient('mongodb://' + os.environ['MONGO_USERNAME']+ ':' + 
+        self.db_client = MongoClient('mongodb://' + os.environ['MONGO_USERNAME']+ ':' + 
             os.environ['MONGO_PASSWORD'] + '@' + os.environ['MONGO_HOST'] + ':' 
             + os.environ['MONGO_PORT'] + '/')
-        database = db_client[os.environ['MONGO_DATABASE']]
+        database = self.db_client[os.environ['MONGO_DATABASE']]
         self.collection = database.users
         #We mock the collection so the database is not affected by the tests
         self.collection.find_one = MagicMock(return_value=None)
@@ -81,14 +81,6 @@ class CreationTest(AioHTTPTestCase):
 
     @unittest_run_loop
     async def test_handle_creation_missing_parameter(self):
-        payload = {"email":"test@test.com", "password":"test"}
-        resp = await self.client.request("POST", "/register", data=payload)
-        assert resp.status == 400
-        json_response = await resp.json()
-        assert "code" not in json_response
-        assert "message" in json_response
-        assert json_response["message"] == "Bad request"
-
         payload = {"email":"test@test.com"}
         resp = await self.client.request("POST", "/register", data=payload)
         assert resp.status == 400
@@ -104,6 +96,10 @@ class CreationTest(AioHTTPTestCase):
         assert "code" not in json_response
         assert "message" in json_response
         assert json_response["message"] == "Bad request"
+
+    def tearDown(self):
+        self.db_client.close()
+        super().tearDown()
 
 if __name__ == "__main__":
     unittest.main()
