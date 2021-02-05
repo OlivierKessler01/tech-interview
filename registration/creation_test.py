@@ -40,7 +40,7 @@ class CreationTest(AioHTTPTestCase):
 
     @unittest_run_loop
     async def test_handle_creation_ok(self):
-        payload = {"email":"test@test.com", "password":"test", "username" :"username"}
+        payload = {"email":"test@test.com", "password":"test"}
         resp = await self.client.request("POST", "/register", data=payload)
         assert resp.status == 200
         json_response = await resp.json()
@@ -59,11 +59,11 @@ class CreationTest(AioHTTPTestCase):
             A verified account already exists, return 409
         '''
         self.collection.find_one = MagicMock(return_value={"_id" : "blabla", "verified" : True})
-        payload = {"email":"test@test.com", "password":"test", "username" :"username"}
+        payload = {"email":"test@test.com", "password":"test"}
         resp = await self.client.request("POST", "/register", data=payload)
         assert resp.status == 409
         json_response = await resp.json()
-        assert json_response["message"] == "Username or email already exists/is already linked to a verified account"
+        assert json_response["message"] == "Email already exists/is already linked to a verified account"
 
     @unittest_run_loop
     async def test_handle_creation_user_already_exists_regenerate_code(self):
@@ -72,7 +72,7 @@ class CreationTest(AioHTTPTestCase):
         '''
         self.collection.find_one = MagicMock(return_value={"_id" : "blabla", "verified" : False})
         self.collection.update_one = MagicMock(return_value={"_id" : "blabla", "verified" : False})
-        payload = {"email":"test@test.com", "password":"test", "username" :"username"}
+        payload = {"email":"test@test.com", "password":"test"}
         resp = await self.client.request("POST", "/register", data=payload)
         assert resp.status == 200
         json_response = await resp.json()
@@ -89,7 +89,7 @@ class CreationTest(AioHTTPTestCase):
         assert "message" in json_response
         assert json_response["message"] == "Bad request"
 
-        payload = {"email":"test@test.com", "username":"username"}
+        payload = {"email":"test@test.com"}
         resp = await self.client.request("POST", "/register", data=payload)
         assert resp.status == 400
         json_response = await resp.json()
@@ -97,7 +97,7 @@ class CreationTest(AioHTTPTestCase):
         assert "message" in json_response
         assert json_response["message"] == "Bad request"
 
-        payload = {"username":"username", "password":"test"}
+        payload = {"password":"test"}
         resp = await self.client.request("POST", "/register", data=payload)
         assert resp.status == 400
         json_response = await resp.json()

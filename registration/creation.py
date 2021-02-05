@@ -5,6 +5,11 @@ import time
 import smtplib
 
 class CreationHandler:
+    '''
+        Collection of function pointers (coroutines whose names are starting by handle_*) to pass as
+         route callback function to AIOHTTP serve.
+    '''
+
     def __init__(self, db_collection : Collection, smtp_host : str, smtp_port: int, crypt_context : CryptContext):
         self.db_collection = db_collection
         self.smtp_host = smtp_host
@@ -21,9 +26,10 @@ class CreationHandler:
             client.sendmail('test@test.test', email, message)
             print("Sending mail to : " + email + ". Content : " + message + "\n")
 
-    async def handle_creation(self, request):
+    async def handle_creation(self, request) -> web.Response:
         '''
-            This coroutine handles the user registration process : inserts the user in the DB, sends the email and returns a response
+            This coroutine handles the user registration process : inserts the user in the DB, 
+            sends the email and returns a response.
 
             3 MAIN CASES :
                 - No account previously registered : create a new one and send the verification code
@@ -33,24 +39,21 @@ class CreationHandler:
         data = await request.post()
 
         try:
-            username = data['username']
             password = data['password']
             email = data['email']
             verification_code = str(abs(hash(email)) % (10 ** 4))
             code_timestamp = time.time()
             message = "The registration process has been recorded, here is your code (also sent via email)"
 
-            #Look into the DB to see if the username of email address are already in use
+            #Look into the DB to see if the email address are already in use
             existing_user = self.db_collection.find_one(
-                {   
-                    "$or": [ { "email": email }, { "username": username } ]
-                }
+                {  "email": email }
             )
 
             if existing_user is not None:
                 #A verified used already exists
                 if existing_user['verified'] == True:
-                    message = "Username or email already exists/is already linked to a verified account"
+                    message = "Email already exists/is already linked to a verified account"
                     response_obj = { 'status' : 'failed', 'message': message}
                     return web.json_response(response_obj, status=409)
                 #A user already exists but it has not been verified, regenerate a code and override the record
@@ -75,7 +78,6 @@ class CreationHandler:
                 try:
                     user_id = self.db_collection.insert_one(
                     {
-                        'username': username,
                         'password' : self.crypt_context.hash(password), 
                         'email' : email, 
                         'verification_code' : verification_code,
