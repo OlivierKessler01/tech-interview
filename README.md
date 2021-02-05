@@ -1,4 +1,4 @@
-# Dailymotion test -- User registration API
+# Tech interview -- User registration API
 
 ## Run app
 ```sh
