@@ -2,6 +2,8 @@ from aiohttp import web
 from pymongo.collection import Collection
 from passlib.context import CryptContext
 import time
+import base64
+import re
 
 class VerificationHandler:
     '''
@@ -13,7 +15,7 @@ class VerificationHandler:
         self.db_collection = db_collection
         self.crypt_context = crypt_context
 
-    async def handle_verification(self, request) -> web.Response:
+    async def handle_verification(self, request : web.Request) -> web.Response:
         '''
             This co-routine handles the validation process of the user registration
 
@@ -22,17 +24,21 @@ class VerificationHandler:
             The delay beforing staling is of 1 minute.
         '''
         data = await request.post()
-        
+        headers = request.headers
+
         try:
-            email = data['email']
-            password = data['password']
+            #Get email and password from the BASIC AUTH header
+            basic_auth_header = re.sub(r'^.*?Basic ', '', headers['Authorization'])
+            email_password_encoded = base64.b64decode(basic_auth_header).decode("utf-8")
+            email = email_password_encoded[0:email_password_encoded.find(':')]
+            password = email_password_encoded[email_password_encoded.find(':') + 1:]
         except KeyError as e:
             #HTTP Basic Auth not set, send 401 Unauthorized code
             response_obj = { 'status' : 'failed', 'message': "Unauthorized"}
             return web.json_response(response_obj, status=401, headers=["WWW-Authenticate: Basic realm=\"Access to the verification API\""])
 
         try:
-            verification_code = data['code']
+            verification_code = data['verification_code']
 
             #Look into the DB to see if the email address are already in use
             existing_user = self.db_collection.find_one({ "email": email })

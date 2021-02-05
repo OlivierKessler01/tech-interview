@@ -7,6 +7,7 @@ from passlib.context import CryptContext
 import os
 from unittest.mock import MagicMock
 import time
+import base64
 
 from verification import VerificationHandler
 
@@ -48,8 +49,9 @@ class CreationTest(AioHTTPTestCase):
             }
         )
 
-        payload = {"email":"test@test.com", "password":"test", "code" : "1234"}
-        resp = await self.client.request("POST", "/verify", data=payload)
+        payload = {"verification_code" : "1234"}       
+        headers = {"Authorization": "Basic " + base64.b64encode("test@test.com:test".encode("utf-8")).decode("utf-8")}
+        resp = await self.client.request("POST", "/verify", data=payload, headers=headers)
         assert resp.status == 200
         json_response = await resp.json() 
         assert json_response["message"] == "The account is now verified."
@@ -65,8 +67,9 @@ class CreationTest(AioHTTPTestCase):
             }
         )
 
-        payload = {"email":"test@test.com", "password":"test", "code" : "1234"}
-        resp = await self.client.request("POST", "/verify", data=payload)
+        payload = {"verification_code" : "1234"}
+        headers = {"Authorization": "Basic " + base64.b64encode("test@test.com:test".encode("utf-8")).decode("utf-8")}
+        resp = await self.client.request("POST", "/verify", data=payload, headers=headers)
         assert resp.status == 403
         json_response = await resp.json() 
         assert json_response["message"] == "The verification code is stale. Please retry calling /register to get a new code."

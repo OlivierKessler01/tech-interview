@@ -107,7 +107,7 @@ class CreationHandler:
             return web.json_response(response_obj, status=200)
         except KeyError as e:
             #If a field is missing in the HTTP POST content
-            response_obj = { 'status' : 'failed', 'message': "Bad request" }
+            response_obj = { 'status' : 'failed', 'message': "Bad request : field missing" }
             return web.json_response(response_obj, status=400)
 
         

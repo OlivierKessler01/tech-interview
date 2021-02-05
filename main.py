@@ -5,6 +5,7 @@ from pymongo import MongoClient
 from passlib.context import CryptContext
 import smtplib
 import os
+import logging
 
 db_client = MongoClient('mongodb://' + os.environ['MONGO_USERNAME']+ ':' + 
     os.environ['MONGO_PASSWORD'] + '@' + os.environ['MONGO_HOST'] + ':' 
@@ -23,6 +24,12 @@ verification_handler = VerificationHandler(db_collection=collection, crypt_conte
 app = web.Application()
 app.add_routes([web.post('/register', creation_handler.handle_creation),
                 web.post('/verify', verification_handler.handle_verification)])
+
+app.logger.setLevel(logging.DEBUG)
+# it is necessary to add a "handler" to the logger,
+# or else logging is a nop
+app.logger.addHandler(logging.StreamHandler())
+app.logger.debug('foo')
 
 if __name__ == '__main__':
     web.run_app(app)
