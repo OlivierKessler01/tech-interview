@@ -87,7 +87,7 @@ class CreationTest(AioHTTPTestCase):
         json_response = await resp.json()
         assert "code" not in json_response
         assert "message" in json_response
-        assert json_response["message"] == "Bad request"
+        assert json_response["message"] == "Bad request : field missing"
 
         payload = {"password":"test"}
         resp = await self.client.request("POST", "/register", data=payload)
@@ -95,7 +95,7 @@ class CreationTest(AioHTTPTestCase):
         json_response = await resp.json()
         assert "code" not in json_response
         assert "message" in json_response
-        assert json_response["message"] == "Bad request"
+        assert json_response["message"] == "Bad request : field missing"
 
     def tearDown(self):
         self.db_client.close()

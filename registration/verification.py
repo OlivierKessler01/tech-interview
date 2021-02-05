@@ -34,8 +34,8 @@ class VerificationHandler:
             password = email_password_encoded[email_password_encoded.find(':') + 1:]
         except KeyError as e:
             #HTTP Basic Auth not set, send 401 Unauthorized code
-            response_obj = { 'status' : 'failed', 'message': "Unauthorized"}
-            return web.json_response(response_obj, status=401, headers=["WWW-Authenticate: Basic realm=\"Access to the verification API\""])
+            response_obj = { 'status' : 'failed', 'message': "Unauthorized : missing BASIC AUTH header"}
+            return web.json_response(response_obj, status=401, headers={"WWW-Authenticate": "Basic realm=\"Access to the verification API\""})
 
         try:
             verification_code = data['verification_code']

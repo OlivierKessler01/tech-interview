@@ -74,6 +74,69 @@ class CreationTest(AioHTTPTestCase):
         json_response = await resp.json() 
         assert json_response["message"] == "The verification code is stale. Please retry calling /register to get a new code."
 
+    @unittest_run_loop
+    async def test_handle_verification_bad_password(self):
+        self.collection.find_one = MagicMock(
+            return_value = {
+                "password": self.crypt_context.hash("test1"), 
+                "verified": False, "code_timestamp" : time.time(), 
+                "verification_code": "1234",
+                "_id" : "dummyid"
+            }
+        )
+
+        payload = {"verification_code" : "1234"}
+        headers = {"Authorization": "Basic " + base64.b64encode("test@test.com:test2".encode("utf-8")).decode("utf-8")}
+        resp = await self.client.request("POST", "/verify", data=payload, headers=headers)
+        assert resp.status == 401
+        json_response = await resp.json() 
+        assert json_response["message"] == "Unauthorized, bad credentials"
+
+    @unittest_run_loop
+    async def test_handle_verification_no_auth_header(self):
+        self.collection.find_one = MagicMock(
+            return_value = {
+                "password": self.crypt_context.hash("test"), 
+                "verified": False, "code_timestamp" : time.time(), 
+                "verification_code": "1234",
+                "_id" : "dummyid"
+            }
+        )
+
+        payload = {"verification_code" : "1234"}
+        resp = await self.client.request("POST", "/verify", data=payload)
+        assert resp.status == 401
+        json_response = await resp.json() 
+        assert "WWW-Authenticate" in resp.headers
+        assert json_response["message"] == "Unauthorized : missing BASIC AUTH header"
+
+    @unittest_run_loop
+    async def test_handle_verification_bad_code(self):
+        self.collection.find_one = MagicMock(
+            return_value = {
+                "password": self.crypt_context.hash("test"), 
+                "verified": False, "code_timestamp" : time.time(), 
+                "verification_code": "1234",
+                "_id" : "dummyid"
+            }
+        )
+
+        payload = {"verification_code" : "12345"}
+        headers = {"Authorization": "Basic " + base64.b64encode("test@test.com:test".encode("utf-8")).decode("utf-8")}
+        resp = await self.client.request("POST", "/verify", data=payload, headers=headers)
+        assert resp.status == 403
+        json_response = await resp.json() 
+        assert json_response["message"] == "Bad verification code."
+
+    @unittest_run_loop
+    async def test_handle_verification_missing_code(self):
+        payload = {"test" : "test"}
+        headers = {"Authorization": "Basic " + base64.b64encode("test@test.com:test".encode("utf-8")).decode("utf-8")}
+        resp = await self.client.request("POST", "/verify", data=payload, headers=headers)
+        assert resp.status == 400
+        json_response = await resp.json() 
+        assert json_response["message"] == "Bad request"
+
     def tearDown(self):
         self.db_client.close()
         super().tearDown()
