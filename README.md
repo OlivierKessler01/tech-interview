@@ -41,7 +41,7 @@ python3 registration/creation_test.py
 ```sh
 docker exec -it <container_mongo_name> /bin/bash
 mongo --username root --password root --authenticationDatabase admin
-use dailymotion
+use auth_api
 db.users.find()
 ```
 
