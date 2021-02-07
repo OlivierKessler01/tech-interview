@@ -1,8 +1,18 @@
 # Tech interview -- User registration API
 
+  This app uses : 
+   - A docker container with Python3, the aiohttp library, the pymongo database driver,
+   the passlib library to encrypt the passwords in database.
+   - A Mongodb docker container.
+   - A reverse-proxy (Nginx) docker container to be able to use 
+   multiple web server instances.
+   - A Mailhog mock smtp server in a docker container.
+
 ## Run app
 ```sh
 docker-compose up -d
+#You might want to modify the .env file to set-up the mongo credentials
+#Otherwise, root:root will be used
 ```
 ## API documentation
 This service is an HTTP API. It features two endpoints, usually used conjointly.
@@ -32,12 +42,24 @@ Using curl to illustrate practical examples :
 '''
 Submit a user creation request
   --insecure : Don`t raise error when encountering self-signed SSL certificates
+
+In case of success, the response will be of this format :
+{
+  "status": "success",
+  "message": "The registration process has been recorded, \
+    "here is your code (also sent via email)",
+  "code": "7646"
+}
+
+Where "code" is the verification code needed at the next step.
+In production, the code would not be returned in the HTTP response but sent
+ to the email address only.
+As the SMTP server is a mock here, I have had to return it here.
 '''
 curl --insecure -d "password=testpassword&email=foo@bar.com" -X POST https://localhost/register
+
 '''
-An email is sent, containing a verification code, (for the sake 
-of the exercise, the code is also returned by the previous request as
- an HTTP data) get that code and use it to validate the creation
+Get that code and use it to validate the creation.
    -u : sets-up BASIC AUTH HTTP Header
 '''
 curl --insecure -d "verification_code=XXXX" -u "foo@bar.com:testpassword" -X POST https://localhost/verify
@@ -52,8 +74,8 @@ python3 registration/creation_test.py
 
 ## Connecting to the database
 ```sh
-docker exec -it <container_mongo_name> /bin/bash
-mongo --username root --password root --authenticationDatabase admin
+docker exec -it tech-interview_mongo_1 /bin/bash
+mongo --username <mongo_username> --password <mongo_password> --authenticationDatabase admin
 use auth_api
 db.users.find()
 ```
