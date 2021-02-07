@@ -1,5 +1,13 @@
 # Tech interview -- User registration API
 
+DISCLAIMER : I've struggled understanding the level of abstractions I was allowed
+ to use in this exercice (especially concerning the TCP socket managment),
+ I've made the choice to use the aiohttp library, favoring performance and security
+(and thus, the "production-ready" part of the exercise) over the simplistic
+ approach I would have been able to achieve working  with the standard Python
+ socket managment library in such a short time. If I was expected to work at
+lower-level, please let me know, I'd be glad to update this repository as such.
+
   This app uses : 
    - A docker container with Python3, the aiohttp library, the pymongo database driver,
    the passlib library to encrypt the passwords in database.
