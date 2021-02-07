@@ -8,34 +8,46 @@ import os
 from unittest.mock import MagicMock
 import time
 import base64
-
 from verification import VerificationHandler
 
 class CreationTest(AioHTTPTestCase):
 
     async def get_application(self):
         '''
-            Mocking mongoclient and injecting it in the handler so the test doesn't write in database
+            Mocking mongoclient and injecting it in the handler 
+            so the test doesn't write in database
         '''
 
-        self.db_client = MongoClient('mongodb://' + os.environ['MONGO_USERNAME']+ ':' + 
-            os.environ['MONGO_PASSWORD'] + '@' + os.environ['MONGO_HOST'] + ':' 
-            + os.environ['MONGO_PORT'] + '/')
+        self.db_client = MongoClient(
+            'mongodb://' + os.environ['MONGO_USERNAME']+ ':' 
+            + os.environ['MONGO_PASSWORD'] + '@'
+            + os.environ['MONGO_HOST'] + ':' 
+            + os.environ['MONGO_PORT'] + '/'
+        )
+
         database = self.db_client[os.environ['MONGO_DATABASE']]
         self.collection = database.users
         #We mock the collection so the database is not affected by the tests
         self.collection.find_one = MagicMock(return_value=None)
-        self.collection.update_one = MagicMock(return_value={"inserted_id": "blabla"})
-        self.crypt_context = CryptContext(
-                        schemes=["pbkdf2_sha256"],
-                        default="pbkdf2_sha256",
-                        pbkdf2_sha256__default_rounds=30000
-                    )
+        self.collection.update_one = MagicMock(
+            return_value={"inserted_id": "blabla"}
+        )
 
-        verification_handler = VerificationHandler(db_collection=self.collection, crypt_context=self.crypt_context)
+        self.crypt_context = CryptContext(
+            schemes=["pbkdf2_sha256"],
+            default="pbkdf2_sha256",
+            pbkdf2_sha256__default_rounds=30000
+        )
+
+        verification_handler = VerificationHandler(
+            db_collection=self.collection, 
+            crypt_context=self.crypt_context
+        )
 
         app = web.Application()
-        app.add_routes([web.post('/verify', verification_handler.handle_verification)])
+        app.add_routes(
+            [web.post('/verify', verification_handler.handle_verification)]
+        )
         return app
 
     @unittest_run_loop
@@ -50,8 +62,19 @@ class CreationTest(AioHTTPTestCase):
         )
 
         payload = {"verification_code" : "1234"}       
-        headers = {"Authorization": "Basic " + base64.b64encode("test@test.com:test".encode("utf-8")).decode("utf-8")}
-        resp = await self.client.request("POST", "/verify", data=payload, headers=headers)
+        headers = {
+            "Authorization": "Basic " + base64.b64encode(
+                "test@test.com:test".encode("utf-8")
+            ).decode("utf-8")
+        }
+
+        resp = await self.client.request(
+            "POST", 
+            "/verify", 
+            data=payload, 
+            headers=headers
+        )
+
         assert resp.status == 200
         json_response = await resp.json() 
         assert json_response["message"] == "The account is now verified."
@@ -68,11 +91,22 @@ class CreationTest(AioHTTPTestCase):
         )
 
         payload = {"verification_code" : "1234"}
-        headers = {"Authorization": "Basic " + base64.b64encode("test@test.com:test".encode("utf-8")).decode("utf-8")}
-        resp = await self.client.request("POST", "/verify", data=payload, headers=headers)
+        headers = {
+            "Authorization": "Basic " + base64.b64encode(
+                "test@test.com:test".encode("utf-8")
+            ).decode("utf-8")
+        }
+
+        resp = await self.client.request(
+            "POST", 
+            "/verify", 
+            data=payload, 
+            headers=headers
+        )
         assert resp.status == 403
         json_response = await resp.json() 
-        assert json_response["message"] == "The verification code is stale. Please retry calling /register to get a new code."
+        assert json_response["message"] == "The verification code is stale. " \
+        "Please retry calling /register to get a new code."
 
     @unittest_run_loop
     async def test_handle_verification_bad_password(self):
@@ -86,8 +120,19 @@ class CreationTest(AioHTTPTestCase):
         )
 
         payload = {"verification_code" : "1234"}
-        headers = {"Authorization": "Basic " + base64.b64encode("test@test.com:test2".encode("utf-8")).decode("utf-8")}
-        resp = await self.client.request("POST", "/verify", data=payload, headers=headers)
+        headers = {
+            "Authorization": "Basic " + base64.b64encode(
+                "test@test.com:test2".encode("utf-8")).decode("utf-8"
+            )
+        }
+
+        resp = await self.client.request(
+            "POST", 
+            "/verify", 
+            data=payload, 
+            headers=headers
+        )
+
         assert resp.status == 401
         json_response = await resp.json() 
         assert json_response["message"] == "Unauthorized, bad credentials"
@@ -108,7 +153,8 @@ class CreationTest(AioHTTPTestCase):
         assert resp.status == 401
         json_response = await resp.json() 
         assert "WWW-Authenticate" in resp.headers
-        assert json_response["message"] == "Unauthorized : missing BASIC AUTH header"
+        assert json_response["message"] == "Unauthorized : " \
+        "missing BASIC AUTH header"
 
     @unittest_run_loop
     async def test_handle_verification_bad_code(self):
@@ -122,8 +168,17 @@ class CreationTest(AioHTTPTestCase):
         )
 
         payload = {"verification_code" : "12345"}
-        headers = {"Authorization": "Basic " + base64.b64encode("test@test.com:test".encode("utf-8")).decode("utf-8")}
-        resp = await self.client.request("POST", "/verify", data=payload, headers=headers)
+        headers = {
+            "Authorization": "Basic " + base64.b64encode(
+                "test@test.com:test".encode("utf-8")
+            ).decode("utf-8")
+        }
+        resp = await self.client.request(
+            "POST", 
+            "/verify", 
+            data=payload, 
+            headers=headers
+        )
         assert resp.status == 403
         json_response = await resp.json() 
         assert json_response["message"] == "Bad verification code."
@@ -131,8 +186,17 @@ class CreationTest(AioHTTPTestCase):
     @unittest_run_loop
     async def test_handle_verification_missing_code(self):
         payload = {"test" : "test"}
-        headers = {"Authorization": "Basic " + base64.b64encode("test@test.com:test".encode("utf-8")).decode("utf-8")}
-        resp = await self.client.request("POST", "/verify", data=payload, headers=headers)
+        headers = {
+            "Authorization": "Basic " + base64.b64encode(
+                "test@test.com:test".encode("utf-8")
+            ).decode("utf-8")
+        }
+        resp = await self.client.request(
+            "POST", 
+            "/verify", 
+            data=payload, 
+            headers=headers
+        )
         assert resp.status == 400
         json_response = await resp.json() 
         assert json_response["message"] == "Bad request"
