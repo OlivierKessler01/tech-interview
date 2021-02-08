@@ -18,9 +18,9 @@ lower-level, please let me know, I'd be glad to update this repository as such.
 
 ## Run app
 ```sh
-docker-compose up -d
 #You might want to modify the .env file to set-up the mongo credentials
 #Otherwise, root:root will be used
+docker-compose up -d
 ```
 ## API documentation
 This service is an HTTP API. It features two endpoints, usually used conjointly.
@@ -74,7 +74,7 @@ curl --insecure -d "verification_code=XXXX" -u "foo@bar.com:testpassword" -X POS
 ```
 ## Run tests
 ```sh
-docker exec -it <container_web_name> /bin/bash  
+docker exec -it tech-interview_web_1 /bin/bash
 #TODO : find a unittest discovery solution to automate it   
 python3 registration/verification_test.py
 python3 registration/creation_test.py 
